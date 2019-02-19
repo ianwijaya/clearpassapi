@@ -1,0 +1,27 @@
+
+when RULE_INIT {
+	set static::uri_prefix "/api/3rdparty/clearpass"
+	set static::clearpass_api_debugging 1
+}
+
+when HTTP_REQUEST {
+	if { [HTTP::method] equals "POST" } {
+		if { [HTTP::uri] starts_with "${static::uri_prefix}/table_update" } {
+			if { [HTTP::header Content-Type] equals "application/json " } {
+				HTTP::collect [HTTP::header Content-Length]
+			}
+		} else {
+			if { $static::clearpass_api_debugging > 0 } { log local0. "DEBUG: Warning: Got POST to unhandled URI [HTTP::uri], discarding..." }
+			return
+		}
+
+	} 
+}
+
+when HTTP_REQUEST_DATA {
+	set ipaddr [findstr [HTTP::payload] "\"ip\":" ]
+  set healthstatus [findstr [HTTP::payload] "\"HealthStatus\":"]
+  log local0. "addr= $ipaddr"
+  log local0. "health= $healthstatus"
+  HTTP::respond 200 content ""
+}
